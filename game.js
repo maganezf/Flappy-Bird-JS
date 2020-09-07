@@ -90,13 +90,76 @@ const flappyBird = {
   }
 }
 
+const homeScreen = {
+  sourceX: 134,
+  sourceY: 0,
+  width: 174,
+  height: 152,
+  x: (canvas.width / 2) - 174 / 2 ,
+  y: 50,
+
+  create() {
+    context.drawImage(
+      sources,
+      homeScreen.sourceX, homeScreen.sourceY,
+      homeScreen.width, homeScreen.height,
+      homeScreen.x, homeScreen.y,
+      homeScreen.width, homeScreen.height
+    );
+  }
+}
+
+let currentScreen = {};
+
+function switchScreenOfGame (screen) {
+  currentScreen = screen;
+}
+
+const screens = {
+  start: {
+    create () {
+      background.create();
+      floor.create();
+      flappyBird.create();
+      homeScreen.create();
+    },
+
+    click(){
+      switchScreenOfGame(screens.Game);
+    },
+
+    refresh() {
+      
+    }
+  }
+   
+}
+
+screens.Game = {
+  create () {
+    background.create();
+    floor.create();
+    flappyBird.create();
+  },
+
+  refresh() {
+    flappyBird.refresh();
+  }
+}
+
 function loop () {
-  background.create();
-  floor.create();
-  flappyBird.create();
-  //flappyBird.refresh();
+  
+  currentScreen.create();
+  currentScreen.refresh();
 
   requestAnimationFrame(loop);
 }
 
+window.addEventListener('click', () => {
+  if (currentScreen.click){
+    currentScreen.click();
+  }
+});
+
+switchScreenOfGame(screens.start);
 loop();
