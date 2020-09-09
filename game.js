@@ -5,6 +5,9 @@ let frames = 0;
 const hit_sound = new Audio();
 hit_sound.src = './sounds/hit.wav'
 
+const jump_sound = new Audio();
+jump_sound.src = './sounds/jump.wav'
+
 const sources = new Image();
 sources.src = './sprites.png';
 
@@ -54,6 +57,9 @@ function createFloor() {
   return floor;
 
 }
+
+
+
 
 
 const background = {
@@ -141,7 +147,7 @@ function createFlappyBird() {
     refreshCurrentFrames () {
       const framesInterval = 10;
       const intervalExceeded = frames % framesInterval === 0;
-      console.log('[passou intervalo]', intervalExceeded);
+      //console.log('[passou intervalo]', intervalExceeded);
       
       if (intervalExceeded) {
         const initIncrement = 1;
@@ -188,6 +194,128 @@ const homeScreen = {
   }
 }
 
+
+
+function createPipes() {
+
+  const pipes = {
+    width: 52,
+    height: 400,
+
+    floor: {
+      sourceX: 0,
+      sourceY: 169,
+    },
+
+    sky: {
+      sourceX: 52,
+      sourceY: 169,
+    },
+
+    spaceBetween: 80,
+
+    create() {
+
+      pipes.pairsList.forEach((pair) => {
+
+        const yRandom = pair.y;
+        const spaceBetweenPipes = 90;
+
+        const skyPipeX = pair.x;
+        const skyPipeY = yRandom;
+
+        //Sky Pipe
+
+        context.drawImage(
+          sources,
+          pipes.sky.sourceX, pipes.sky.sourceY,
+          pipes.width, pipes.height,
+          skyPipeX, skyPipeY,
+          pipes.width, pipes.height,
+        );
+
+        //Floor Pipe
+
+        const floorPipeX = pair.x;
+        const floorPipeY = pipes.height + spaceBetweenPipes + yRandom;
+
+        context.drawImage(
+          sources,
+          pipes.floor.sourceX, pipes.floor.sourceY,
+          pipes.width, pipes.height,
+          floorPipeX, floorPipeY,
+          pipes.width, pipes.height,
+          
+        );
+
+        pair.skyPipe = {
+          x: skyPipeX,
+          y: pipes.height + skyPipeY
+        }
+
+        pair.floorPipe = {
+          x: floorPipeX,
+          y: floorPipeY
+        }
+
+      })
+      
+    },
+
+    collidedWithFlappyBird (pair) {
+
+      const flappyBirdHead = globals.flappyBird.y;
+      const flappyBirdFoot = globals.flappyBird.y + globals.flappyBird.height;
+
+      if (globals.flappyBird.x >= pair.x ) {
+        if (flappyBirdHead <= pair.skyPipe.y) {
+          return true;
+        }
+
+        if (flappyBirdFoot >= pair.floorPipe.y) {
+          return true;
+        }
+      }
+      
+      return false;
+    },
+
+    pairsList: [],
+
+    refresh() {
+      const exceeded100frames = frames % 100 === 0;
+      
+      if (exceeded100frames) {
+        console.log('[passou 100 frames]');
+        pipes.pairsList.push({
+          x: canvas.width,
+          y: -150 * (Math.random() + 1)
+        });
+      }
+
+      pipes.pairsList.forEach((pair) => {
+        pair.x = pair.x - 2;
+
+        if (pipes.collidedWithFlappyBird(pair) ) {
+          hit_sound.play();
+          alert('You Lose');
+          switchScreenOfGame(screens.start);
+        }
+
+        if (pair.x + pipes.width <= 0){
+          pipes.pairsList.shift();
+        }
+
+      });
+      
+    }
+  }
+
+  return pipes;
+}
+
+// SCREENS
+
 const globals = {};
 let currentScreen = {};
 
@@ -206,13 +334,14 @@ const screens = {
     initialize(){
       globals.flappyBird = createFlappyBird();
       globals.floor = createFloor();
+      globals.pipes = createPipes();
     },
 
     create () {
       background.create();
       globals.flappyBird.create();
-      globals.floor.create();
 
+      globals.floor.create();
       homeScreen.create();
     },
 
@@ -230,6 +359,7 @@ const screens = {
 screens.Game = {
   create () {
     background.create();
+    globals.pipes.create();
     globals.floor.create();
     globals.flappyBird.create();
   },
@@ -239,6 +369,8 @@ screens.Game = {
   },
 
   refresh() {
+    globals.pipes.refresh();
+    globals.floor.refresh();
     globals.flappyBird.refresh();
    }
 }
@@ -255,6 +387,7 @@ function loop () {
 
 window.addEventListener('click', () => {
   if (currentScreen.click){
+    jump_sound.play();
     currentScreen.click();
   }
 });
